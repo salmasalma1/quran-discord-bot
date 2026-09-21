@@ -1,0 +1,6 @@
+# Railway build config (installs FFmpeg automatically)
+[phases.setup]
+nixPkgs = ["ffmpeg"]
+
+[start]
+cmd = "python main.py"
