@@ -11,11 +11,12 @@ Built with Python and [discord.py](https://github.com/Rapptz/discord.py). All bo
 | 📻 Auto Quran voice channel | You designate one voice channel once — the bot joins **automatically** when anyone joins it, and leaves when it empties |
 | 🔄 Continuous khatma | Plays through all 114 surahs (random 🎲 or in order 📖), announces every completed khatma, then starts a new one — a full khatma roughly every 2–3 days on a 24/7 host |
 | 💾 Restart-proof progress | The khatma position is saved to disk; the bot resumes the **exact same surah** after a crash, restart, or redeploy |
+| 📡 Live radio | `/radio` plays a non-stop live Quran radio stream from one of 6 reciters |
 | 🎧 On-demand recitations | `/play` any surah with any of **19 reciters** (Alafasy, Al-Husary, Abdul Basit, Al-Minshawi, Maher, ...) with a full queue system |
 | 📖 Ayahs | Random or specific ayah with English translation and a quran.com link |
 | 🔎 Quran search | Full-text search of the Quran in Arabic |
 | 🕌 Prayer times | For any city worldwide + Hijri date, with 5 calculation methods |
-| 📿 Athkar | Morning, evening, and bedtime remembrances |
+| 📿 Athkar | Morning, evening, and bedtime remembrances (see [Known issues](#-status)) |
 | 🔔 Daily message | Automatic daily ayah (+ prayer times) in a channel of your choice |
 
 ## 🚀 Quick start
@@ -54,6 +55,14 @@ python main.py
 ```
 
 When you see `Logged in as ...` the bot is online. 
+
+### Environment variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `DISCORD_TOKEN` | Yes | Your bot token from the Developer Portal |
+| `DEV_GUILD_ID` | No | A server ID for instant slash-command sync while testing |
+| `FFMPEG_PATH` | No | Path to the `ffmpeg` binary if it is not on `PATH` |
 
 > 💡 Slash commands can take up to an hour to appear globally. For instant commands while testing, add `DEV_GUILD_ID=your_server_id` to `.env`.
 
@@ -103,7 +112,7 @@ sudo journalctl -u quran-bot -f  # live logs
 
 The service auto-restarts on crashes and on boot.
 
-## 🤖 Commands (17)
+## 🤖 Commands (18)
 
 | Command | Description |
 |---|---|
@@ -114,6 +123,7 @@ The service auto-restarts on crashes and on boot.
 | `/play surah: [reciter:]` | Play a surah on demand (autocomplete for names & numbers) |
 | `/pause` · `/resume` · `/skip` · `/stop` | Playback controls |
 | `/queue` · `/volume 0-100` · `/leave` | Queue, volume, leave the channel |
+| `/radio station:` | Play a live Quran radio stream (Alafasy, Al-Hussary, Maher, As-Sudais, Al-Dosari, Al-Minshawi) |
 | `/reciters` · `/setreciter` | List reciters / set the server default for `/play` |
 | `/ayah [surah:] [ayah:]` | A random ayah, or a specific one |
 | `/search query:` | Search the Quran text |
@@ -144,6 +154,8 @@ quran-bot/
 ├── Dockerfile         # for Docker-based hosts
 ├── nixpacks.toml      # for Railway
 ├── .env.example       # template for your token
+├── athkar.json        # athkar with English keys (not used by the bot yet, see Status)
+├── LICENSE.txt
 └── data/
     ├── surahs.json    # the 114 surahs (names + ayah counts)
     ├── reciters.json  # 19 reciters and their mp3quran.net servers
@@ -154,7 +166,7 @@ quran-bot/
 ## 🛠 Customization
 
 - **Add a reciter**: grab an `id` from the [mp3quran.net API](https://mp3quran.net/api/v3/reciters?language=ar) and append it to `data/reciters.json` following the same shape.
-- **Edit athkar**: modify `data/athkar.json` (keys: `morning`, `evening`, `bedtime`).
+- **Edit athkar**: the bot loads `data/athkar.json` and expects the keys `morning`, `evening`, `bedtime`. The current file uses Arabic keys instead (see Status).
 - **FFmpeg not on the host?** Set `FFMPEG_PATH=/path/to/ffmpeg` in `.env`, or drop an `ffmpeg` binary next to `main.py` — the bot picks it up automatically.
 - **Default reciter**: `/setreciter` in Discord, or pre-set `"reciter": "<reciter_id>"` per guild in `data/config.json`.
 
@@ -168,6 +180,13 @@ quran-bot/
 
 **Someone used `/stop`.** The khatma is suspended — bring it back with `/auto resume`.
 
+## 🚧 Status
+
+This is a personal project and is not actively maintained. It has not been tested end to end in its current form.
+
+Known issues:
+- **`/athkar` probably returns nothing.** The command looks up the keys `morning` / `evening` / `bedtime`, but `data/athkar.json` uses Arabic keys (`صباح` / `مساء` / `نوم`). The root `athkar.json` has the English keys and appears to be the intended fix, but it has not been moved into `data/` yet.
+
 ## 🙏 Credits & data sources
 
 - Quran text & translations: [alquran.cloud](https://alquran.cloud)
@@ -178,4 +197,4 @@ quran-bot/
 
 ## 📄 License
 
-[MIT](LICENSE)
+[MIT](LICENSE.txt)

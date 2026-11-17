@@ -4,3 +4,11 @@ __pycache__/
 data/config.json
 .venv/
 venv/
+
+.env.*
+!.env.example
+*.log
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
