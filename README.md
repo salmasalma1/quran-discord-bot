@@ -1,25 +1,25 @@
-# 🕌 Quran Bot for Discord
+# Quran Bot for Discord
 
 A Discord bot that streams Quran recitations **24/7** with a **continuous khatma** (full-Quran playlist) in a dedicated voice channel — plus ayahs, Quran search, prayer times, and athkar.
 
 Built with Python and [discord.py](https://github.com/Rapptz/discord.py). All bot code is in English; the Arabic content lives only in the data files (Quran text, athkar, surah/reciter names).
 
-## ✨ Features
+##  Features
 
 | Feature | Description |
 |---|---|
-| 📻 Auto Quran voice channel | You designate one voice channel once — the bot joins **automatically** when anyone joins it, and leaves when it empties |
-| 🔄 Continuous khatma | Plays through all 114 surahs (random 🎲 or in order 📖), announces every completed khatma, then starts a new one — a full khatma roughly every 2–3 days on a 24/7 host |
-| 💾 Restart-proof progress | The khatma position is saved to disk; the bot resumes the **exact same surah** after a crash, restart, or redeploy |
-| 📡 Live radio | `/radio` plays a non-stop live Quran radio stream from one of 6 reciters |
-| 🎧 On-demand recitations | `/play` any surah with any of **19 reciters** (Alafasy, Al-Husary, Abdul Basit, Al-Minshawi, Maher, ...) with a full queue system |
-| 📖 Ayahs | Random or specific ayah with English translation and a quran.com link |
-| 🔎 Quran search | Full-text search of the Quran in Arabic |
-| 🕌 Prayer times | For any city worldwide + Hijri date, with 5 calculation methods |
-| 📿 Athkar | Morning, evening, and bedtime remembrances (see [Known issues](#-status)) |
-| 🔔 Daily message | Automatic daily ayah (+ prayer times) in a channel of your choice |
+|  Auto Quran voice channel | You designate one voice channel once — the bot joins **automatically** when anyone joins it, and leaves when it empties |
+| Continuous khatma | Plays through all 114 surahs (random 🎲 or in order 📖), announces every completed khatma, then starts a new one — a full khatma roughly every 2–3 days on a 24/7 host |
+|  Restart-proof progress | The khatma position is saved to disk; the bot resumes the **exact same surah** after a crash, restart, or redeploy |
+|  Live radio | `/radio` plays a non-stop live Quran radio stream from one of 6 reciters |
+|  On-demand recitations | `/play` any surah with any of **19 reciters** (Alafasy, Al-Husary, Abdul Basit, Al-Minshawi, Maher, ...) with a full queue system |
+|  Ayahs | Random or specific ayah with English translation and a quran.com link |
+|  Quran search | Full-text search of the Quran in Arabic |
+|  Prayer times | For any city worldwide + Hijri date, with 5 calculation methods |
+|  Athkar | Morning, evening, and bedtime remembrances (see [Known issues](#-status)) |
+|  Daily message | Automatic daily ayah (+ prayer times) in a channel of your choice |
 
-## 🚀 Quick start
+##  Quick start
 
 ### 1) Create the bot on Discord (once)
 
@@ -98,7 +98,7 @@ The bot only streams audio and stores a tiny JSON file, so a free tier is enough
 
 A `Dockerfile` and `nixpacks.toml` (installs FFmpeg automatically) are included. Set `DISCORD_TOKEN` as an environment variable and deploy.
 
-> ⚠️ Railway bills by usage — a 24/7 voice bot burns the free credit within days. Prefer Wispbyte or a VPS for continuous audio.
+>  Railway bills by usage — a 24/7 voice bot burns the free credit within days. Prefer Wispbyte or a VPS for continuous audio.
 
 ### Option C — Your own VPS (Oracle Cloud free tier, any Ubuntu box)
 
@@ -133,7 +133,7 @@ The service auto-restarts on crashes and on boot.
 | `/daily off` · `/daily info` · `/daily preview` | Manage the daily message |
 | `/help` | All commands inside Discord |
 
-## 🔄 How the khatma works
+##  How the khatma works
 
 1. `/auto set` picks the voice channel, reciter, and surah order.
 2. Someone joins the channel → the bot joins and starts from where the khatma left off.
@@ -142,7 +142,7 @@ The service auto-restarts on crashes and on boot.
 5. `/skip` counts as finishing the current surah in the khatma. `/auto pause` suspends it. `/stop` suspends it too (bring it back with `/auto resume`).
 6. Progress is persisted in `data/config.json` — restart-safe.
 
-## 📁 Project structure
+##  Project structure
 
 ```
 quran-bot/
@@ -170,7 +170,7 @@ quran-bot/
 - **FFmpeg not on the host?** Set `FFMPEG_PATH=/path/to/ffmpeg` in `.env`, or drop an `ffmpeg` binary next to `main.py` — the bot picks it up automatically.
 - **Default reciter**: `/setreciter` in Discord, or pre-set `"reciter": "<reciter_id>"` per guild in `data/config.json`.
 
-## ❓ FAQ
+##  FAQ
 
 **Slash commands don't show up.** Discord syncs global commands slowly (up to an hour). Add `DEV_GUILD_ID` to `.env` for instant sync in one server, or just wait.
 
@@ -180,14 +180,14 @@ quran-bot/
 
 **Someone used `/stop`.** The khatma is suspended — bring it back with `/auto resume`.
 
-## 🚧 Status
+##  Status
 
 This is a personal project and is not actively maintained. It has not been tested end to end in its current form.
 
 Known issues:
 - **`/athkar` probably returns nothing.** The command looks up the keys `morning` / `evening` / `bedtime`, but `data/athkar.json` uses Arabic keys (`صباح` / `مساء` / `نوم`). The root `athkar.json` has the English keys and appears to be the intended fix, but it has not been moved into `data/` yet.
 
-## 🙏 Credits & data sources
+##  Credits & data sources
 
 - Quran text & translations: [alquran.cloud](https://alquran.cloud)
 - Recitations: [mp3quran.net](https://mp3quran.net)
