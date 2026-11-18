@@ -99,19 +99,23 @@ class QuranBot(commands.Bot):
                 ch = guild.get_channel(int(auto_id))
                 if not ch:
                     continue
-                if guild.voice_client and guild.voice_client.is_connected():
-                    continue
-                if not any(not m.bot for m in ch.members):
-                    continue
-                restore_khatma_if_needed(guild)
-                state = self.player.get_state(guild)
-                k = state.khatma
-                if not k.active or k.suspended:
-                    continue
-                ach = guild.get_channel(k.announce_channel_id) if k.announce_channel_id else None
-                state.last_channel = ach or guild.system_channel or ch
-                await ch.connect(self_deaf=True)
-                await self.player.play_next(guild)
+                async with voice_lock(guild.id):
+                    if guild.voice_client and guild.voice_client.is_connected():
+                        continue
+                    if not any(not m.bot for m in ch.members):
+                        continue
+                    restore_khatma_if_needed(guild)
+                    state = self.player.get_state(guild)
+                    k = state.khatma
+                    if not k.active or k.suspended:
+                        continue
+                    ach = guild.get_channel(k.announce_channel_id) if k.announce_channel_id else None
+                    state.last_channel = ach or guild.system_channel or ch
+                    vc = await ensure_voice(guild, ch)
+                    if vc is None:
+                        continue
+                    if not vc.is_playing() and not vc.is_paused():
+                        await self.player.play_next(guild)
                 print(f"Resumed khatma in guild: {guild.name}")
             except Exception as exc:
                 print(f"[autorejoin] error in guild {gid}: {exc!r}")
@@ -154,6 +158,51 @@ def restore_khatma_if_needed(guild: discord.Guild):
     saved = CONFIG.get(str(guild.id), {}).get("khatma")
     if saved:
         bot.player.setup_khatma(guild, saved=saved)
+
+
+# ================================================================ voice helpers
+
+# One lock per guild so two tasks (a voice event + the rejoin after a restart,
+# or two people joining at once) never call connect() at the same time —
+# that was the "Already connected to a voice channel" error.
+VOICE_LOCKS: dict[int, asyncio.Lock] = {}
+
+
+def voice_lock(guild_id: int) -> asyncio.Lock:
+    lock = VOICE_LOCKS.get(guild_id)
+    if lock is None:
+        lock = VOICE_LOCKS[guild_id] = asyncio.Lock()
+    return lock
+
+
+async def ensure_voice(guild: discord.Guild, channel: discord.VoiceChannel):
+    """Join `channel` (or move into it) safely. Returns the connected
+    VoiceClient, or None if it couldn't connect. Call it inside voice_lock()."""
+    vc = guild.voice_client
+    try:
+        if vc is not None and not vc.is_connected():
+            # a connection is still being set up / reconnecting: give it a moment
+            for _ in range(10):
+                await asyncio.sleep(0.5)
+                if vc.is_connected():
+                    break
+            else:
+                # stale client from a dropped connection: clean it up
+                await vc.disconnect(force=True)
+                vc = None
+        if vc is None:
+            vc = await channel.connect(self_deaf=True)
+        elif vc.channel is None or vc.channel.id != channel.id:
+            await vc.move_to(channel)
+    except discord.ClientException:
+        # something else connected first: just use that connection
+        vc = guild.voice_client
+    except (discord.HTTPException, asyncio.TimeoutError) as exc:
+        print(f"[voice] could not connect in {guild.name}: {exc!r}")
+        return None
+    if vc is None or not vc.is_connected():
+        return None
+    return vc
 
 
 # ================================================================ helpers
@@ -829,29 +878,32 @@ async def on_voice_state_update(member, before, after):
             bot.player.cancel_idle(member.guild)
         return
 
+    # mute / deafen / camera / stream changes: nothing to do
+    if before.channel == after.channel:
+        return
+
     guild = member.guild
     cfg = CONFIG.get(str(guild.id), {})
     auto_id = cfg.get("auto_channel_id")
-    vc = guild.voice_client
 
     # auto join: someone joined the dedicated channel
     if auto_id and after.channel and after.channel.id == auto_id:
-        if vc is None or not vc.is_connected() or vc.channel.id != auto_id:
+        async with voice_lock(guild.id):
+            # re-check inside the lock: another task may have joined already
+            vc = guild.voice_client
+            already_here = (vc is not None and vc.is_connected()
+                            and vc.channel is not None and vc.channel.id == auto_id)
             restore_khatma_if_needed(guild)
             state = bot.player.get_state(guild)
             k = state.khatma
-            if k.active:
+            if k.active and not already_here:
                 # notification channel: the announce channel, or the system channel
                 ach = guild.get_channel(k.announce_channel_id) if k.announce_channel_id else None
                 state.last_channel = ach or guild.system_channel or after.channel
-                try:
-                    if vc and vc.is_connected():
-                        await vc.move_to(after.channel)
-                    else:
-                        await after.channel.connect(self_deaf=True)
-                except discord.HTTPException:
+                vc = await ensure_voice(guild, after.channel)
+                if vc is None:
                     return
-                if not k.suspended and not guild.voice_client.is_playing() and not guild.voice_client.is_paused():
+                if not k.suspended and not vc.is_playing() and not vc.is_paused():
                     await bot.player.play_next(guild)
 
     # auto leave when the channel empties
