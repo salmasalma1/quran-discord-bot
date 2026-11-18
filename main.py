@@ -623,7 +623,7 @@ def _auto_check(interaction: discord.Interaction) -> bool:
 
 @auto_group.command(name="set", description="Enable the auto channel and start the continuous khatma")
 @app_commands.default_permissions(manage_guild=True)
-@app_commands.choices(order=[
+@app_commands.choices(reciter=RECITER_CHOICES, order=[
     app_commands.Choice(name="Random (shuffled every khatma)", value="random"),
     app_commands.Choice(name="In order (Al-Fatiha to An-Nas)", value="sequential"),
 ])
